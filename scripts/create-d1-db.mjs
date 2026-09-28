@@ -20,7 +20,9 @@ if (databaseId) {
   console.log(`D1 database "${dbName}" already exists (${databaseId}), reusing it.`)
 } else {
   console.log(`Creating D1 database "${dbName}"...`)
-  execSync(`npx wrangler d1 create ${dbName}`, { stdio: 'inherit' })
+  // --update-config=false: don't let wrangler prompt to add its own binding entry,
+  // which would append a duplicate d1_databases entry alongside the "DB" placeholder below.
+  execSync(`npx wrangler d1 create ${dbName} --update-config=false`, { stdio: 'inherit' })
   databaseId = listDatabases().find((db) => db.name === dbName)?.uuid
 }
 
@@ -32,17 +34,32 @@ if (!databaseId) {
 const wranglerPath = 'wrangler.jsonc'
 const config = readFileSync(wranglerPath, 'utf-8')
 
-if (!config.includes('"d1_databases"')) {
+const dbBindingBlock = config.match(/\{\s*"binding":\s*"DB"[\s\S]*?\}/)
+
+if (!dbBindingBlock) {
   console.error(
-    'No "d1_databases" binding found in wrangler.jsonc. Add one manually with:\n' +
+    'Could not find a D1 binding named "DB" in wrangler.jsonc. Add one manually with:\n' +
       `  database_name: ${dbName}\n  database_id: ${databaseId}`,
   )
   process.exit(1)
 }
 
-const updated = config
+const otherBindings = [...config.matchAll(/"binding":\s*"([^"]+)"/g)]
+  .map((m) => m[1])
+  .filter((binding) => binding !== 'DB')
+
+if (otherBindings.length > 0) {
+  console.warn(
+    `Warning: found unexpected extra binding(s) in wrangler.jsonc: ${otherBindings.join(', ')}. ` +
+      'Only the "DB" binding is used by this app — remove the others if they are stray.',
+  )
+}
+
+const updatedBlock = dbBindingBlock[0]
   .replace(/"database_name":\s*"[^"]*"/, `"database_name": "${dbName}"`)
   .replace(/"database_id":\s*"[^"]*"/, `"database_id": "${databaseId}"`)
+
+const updated = config.replace(dbBindingBlock[0], updatedBlock)
 
 writeFileSync(wranglerPath, updated)
 

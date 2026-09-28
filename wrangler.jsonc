@@ -22,15 +22,9 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "tanstack-start-db",
-			"database_id": "5a8e8559-ad9d-4401-83a1-03b5d10a5a20",
+			"database_name": "tanstack-react-worker-d1-db",
+			"database_id": "e995f193-6cfb-4bbf-b635-183fa546dee4",
 			"migrations_dir": "migrations"
-		},
-		{
-			"binding": "tanstack_start_db",
-			"database_name": "tanstack-start-db",
-			"database_id": "5a8e8559-ad9d-4401-83a1-03b5d10a5a20",
-			"remote": true
 		}
 	]
 	/**
