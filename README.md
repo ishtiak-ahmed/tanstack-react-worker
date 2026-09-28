@@ -1,5 +1,33 @@
 Welcome to your new TanStack Start app!
 
+# Using This Template
+
+This repo ships as two variants, one per branch:
+
+- **[`main`](../../tree/main)** — plain TanStack Start + Cloudflare Workers, no database.
+- **[`d1-db`](../../tree/d1-db)** — the same base, plus a Cloudflare D1 binding wired up with Drizzle ORM (see [Database (D1 + Drizzle)](#database-d1--drizzle) below) and a `/api/health` route to verify the DB connection.
+
+To start a new project from either variant:
+
+```bash
+# clone and check out the variant you want
+git clone <this-repo-url> my-app
+cd my-app
+git checkout main      # or: git checkout d1-db
+
+# detach it from this template's git history
+rm -rf .git && git init
+```
+
+If you're copying the files locally instead of cloning (e.g. scaffolding a project programmatically), use `git worktree` to check out each branch into its own folder and copy from there — see the branch's working tree rather than hand-picking files, so nothing is missed:
+
+```bash
+git worktree add ../my-app-main main
+git worktree add ../my-app-d1 d1-db
+```
+
+Then follow **Getting Started** below in the copied project.
+
 # Getting Started
 
 To run this application:
@@ -53,6 +81,53 @@ This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) an
 For production env vars, run `wrangler secret put MY_VAR` for each secret listed in `.env.example`. Public (non-secret) vars go in `wrangler.jsonc` under `vars`.
 
 KV, D1, R2, and Durable Object bindings are configured in `wrangler.jsonc` — see https://developers.cloudflare.com/workers/wrangler/configuration/.
+
+## Database (D1 + Drizzle)
+
+This project ships with [Drizzle ORM](https://orm.drizzle.team/) wired up against a Cloudflare D1 binding named `DB`.
+
+### 1. Create, wire up, and migrate a D1 database
+
+Run the following, passing the name you want for your database:
+
+```bash
+npm run db:create -- <dbname>
+```
+
+This is idempotent and does everything needed to get a working database:
+
+1. Creates the D1 database via Wrangler (or reuses it if a database with that name already exists).
+2. Writes its `database_name` and `database_id` into the `d1_databases` binding in `wrangler.jsonc`.
+3. Regenerates `worker-configuration.d.ts` so `env.DB` is typed.
+4. Generates SQL migrations from `src/db/schema.ts` with Drizzle Kit.
+5. Applies those migrations to the **remote** database, so it's immediately usable.
+
+If you're also developing locally, also run:
+
+```bash
+npm run db:migrate:local
+```
+
+to apply the same migrations to your local dev database (`.wrangler`'s local D1 state).
+
+Whenever you change `src/db/schema.ts` afterwards, run `npm run db:generate` followed by `db:migrate:local`/`db:migrate:remote` to pick up the change — `db:create` only needs to run once per database.
+
+### 2. Use it in code
+
+```ts
+import { db } from '#/db'
+import { users } from '#/db/schema'
+
+const allUsers = await db.select().from(users)
+```
+
+### Health check
+
+`GET /api/health` runs a trivial query against `DB` and reports whether the database connection is working — useful for confirming a new environment is wired up correctly:
+
+```bash
+curl http://localhost:3000/api/health
+```
 
 
 ## Shadcn

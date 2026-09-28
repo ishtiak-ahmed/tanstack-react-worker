@@ -13,7 +13,26 @@
 	"observability": {
 		"enabled": true
 	},
-	"upload_source_maps": true
+	"upload_source_maps": true,
+	/**
+	 * D1 Database
+	 * Run `npm run db:create -- <dbname>` to create a database and wire this binding automatically.
+	 * https://developers.cloudflare.com/d1/
+	 */
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "tanstack-start-db",
+			"database_id": "5a8e8559-ad9d-4401-83a1-03b5d10a5a20",
+			"migrations_dir": "migrations"
+		},
+		{
+			"binding": "tanstack_start_db",
+			"database_name": "tanstack-start-db",
+			"database_id": "5a8e8559-ad9d-4401-83a1-03b5d10a5a20",
+			"remote": true
+		}
+	]
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
